@@ -1,0 +1,96 @@
+---
+title: "Getting Started"
+editor: visual
+toc: true
+highlight-style: arrow
+format:
+  html:
+    html-math-method: katex
+    code-tools: true
+    self-contained: true
+    code-fold: show
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: "#>"
+---
+
+## Introduction
+
+This document shows how to get predictions from a machine learning model deployed using the `vetiver` MLOps framework.
+
+_"... MLOps, is a set of practices to deploy and maintain machine learning models in production reliably and efficiently. The vetiverframework is for MLOps tasks in Python and R._
+
+_The goal of vetiver is to provide fluent tooling to **version**, **deploy**, and **monitor** a trained model. Functions handle both recording and checking the model\'s input data prototype, and predicting from a remote API endpoint."_
+
+With `vetiver`, models are deployed as a Plumber API in R or a FastAPI in Python. These include a POST endpoint for making predictions from the trained machine learning model. Deploying a model as an API is a typical step in many MLOps frameworks. This approach ensures we deploy machine learning models in a consistent fashion, can version them effectively and can monitor the performance of our models in production.
+
+::: callout-note
+## Note
+
+Model predictions can be augmented or manipulated in the same way as any other data, but it is good practice to do this in a separate process from the model deployment, i.e., the prediction service itself should be a standalone endpoint. This is to ensure that the model's predictions are consistent and reproducible.
+:::
+## Predict from your model endpoint
+
+A model deployed via vetiver can be treated as a special `vetiver_endpoint()` object.
+
+::: panel-tabset
+## R
+
+```{r}
+#| warning: false
+
+library(vetiver)
+
+endpoint <- vetiver_endpoint("http://127.0.0.1:8080/predict")
+endpoint
+```
+
+## Python
+
+```{python}
+#| warning: false
+
+from vetiver.server import predict, vetiver_endpoint
+
+endpoint = vetiver_endpoint("http://127.0.0.1:8080/predict")
+endpoint
+```
+:::
+
+If such a deployed model endpoint is running via one process (either remotely on a server or locally, perhaps via Docker or a background job in the RStudio IDE), you can make predictions with that deployed model and new data in another, separate process1
+
+::: panel-tabset
+## R
+
+```{r}
+#| warning: false
+
+library(tidyverse)
+
+new_car <- tibble(cyl = 4,  disp = 200, 
+                  hp = 100, drat = 3,
+                  wt = 3,   qsec = 17, 
+                  vs = 0,   am = 1,
+                  gear = 4, carb = 2)
+predict(endpoint, new_car)
+```
+
+## Python
+
+```{python}
+#| warning: false
+
+import pandas as pd
+
+new_car_dict = {"cyl": [4], "disp": [200], 
+                 "hp": [100], "drat": [3],
+                 "wt": [3], "qsec": [17], 
+                 "vs": [0], "am": [1],
+                 "gear": [4], "carb": [2]}
+new_car = pd.DataFrame(new_car_dict)
+predict(endpoint, new_car)
+```
+:::
+
+Being able to predict with a `vetiver` model endpoint takes advantage of the model's input data prototype and other metadata that is stored with the model.

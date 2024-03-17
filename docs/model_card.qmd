@@ -1,0 +1,148 @@
+---
+title: "Model Card: your model title"
+output:
+  html_document
+---
+
+```{python}
+#| echo: false
+from IPython.display import display, Markdown
+import datetime
+display(Markdown(f"""
+###### {datetime.date.today()}
+"""))
+```
+
+```{python}
+#| include: false
+import datetime
+import pandas as pd
+from sklearn import metrics
+from vetiver import VetiverModel
+import pins
+import plotly.express as px
+
+b = pins.board_s3('airfinity-datascience-staging', allow_pickle_read=True)
+v = VetiverModel.from_pin(b, 'vetiver-mpg-py', version = '20240306T180900Z-29d75')
+v_meta = b.pin_meta("vetiver-mpg-py")
+```
+
+A [model card](https://doi.org/10.1145/3287560.3287596) provides brief, transparent, responsible reporting for a trained machine learning model.
+
+## Model details
+
+- Developed by PERSON AND/OR TEAM
+```{python}
+#| echo: false
+model_desc = v.description
+num_features = len(v.prototype.construct().dict())
+
+display(Markdown(f"""
+- {model_desc} using {num_features} feature{'s'[:num_features^1]}.
+"""))
+```
+- More details about how model was developed and what it is predicting
+- More details on feature engineering and/or data preprocessing for model
+```{python}
+#| echo: false
+version = v_meta.version
+time_created =  datetime.datetime.strptime(v_meta.created, '%Y%m%dT%H%M%SZ').strftime('%Y-%m-%d %H:%M:%S')
+
+display(Markdown(f"""
+- Version 20240306T180900Z-29d75 was created at {time_created}
+"""))
+```
+
+- Citation and/or license details for the model
+- If you have questions about this model, please contact PERSON@ORG.ORG
+
+## Intended use
+
+- The primary intended use of this model is to ...
+- The primary intended users of this model are Airfinity analysts and data scientists
+
+## Metrics
+
+The metrics used to evaluate this model are:
+
+- Root Mean Squared Error (RMSE)
+- R Squared (RSQ)
+- Mean Absolute Error (MAE)
+
+We chose these metrics because because they are the most common metrics for assessing the performance of regression models, and they are well understood by the data science community.
+
+## Training data & evaluation data
+
+- The training dataset for this model was ...
+- The training dataset for this model has the "prototype" or signature:
+```{python}
+#| echo: false
+v.prototype.construct().schema().get("properties")
+```
+
+- The evaluation dataset used in this model card is ...
+- We chose this evaluation data because ...
+
+Here is a sample of the training data ...
+
+```{python}
+#| label: tbl-planets
+#| tbl-cap: Example data
+#| echo: false
+from vetiver.data import mtcars
+from tabulate import tabulate
+
+Markdown(tabulate(
+  mtcars.head(6),
+  headers=mtcars.columns.tolist()
+))
+```
+
+## Quantitative analyses
+:::{.panel-tabset}
+```{python}
+#| include: false
+## consider using a package like Pandas Profiling for automated EDA
+
+```
+## Overall model performance
+
+```{python}
+#| echo: false
+## compute predictions for your evaluation data
+
+mtcars["preds"] = v.model.predict(mtcars.drop(columns=["mpg"]))
+metric_set = [metrics.mean_absolute_error, metrics.mean_squared_error, metrics.r2_score]
+
+for metric in metric_set:
+    print(metric.__qualname__, ": ", metric(y_pred=mtcars["preds"], y_true=mtcars["mpg"]))
+```
+
+## Visualise
+
+```{python}
+#| echo: false
+performance = px.scatter(mtcars, x="mpg", y = "preds", trendline="ols")
+performance.update_yaxes(matches=None)
+performance.show()
+```
+
+## Performance drilldown
+
+```{python}
+#| echo: false
+performance = px.scatter(mtcars, x="mpg", y = "preds", facet_row="cyl", trendline="ols")
+performance.update_yaxes(matches=None)
+performance.show()
+```
+:::
+
+## Ethical considerations
+
+- We considered ...
+
+## Caveats & recommendations
+
+- This model does ...
+- This model does not ...
+- We recommend ...
